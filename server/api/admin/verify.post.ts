@@ -1,4 +1,4 @@
-import { getUrl, getAllUrls } from '../utils/storage'
+import { getUrl, setUrl } from '../utils/storage'
 
 interface UrlData {
   code: string
@@ -8,19 +8,22 @@ interface UrlData {
   clicks: number
 }
 
-// Admin password - in production, use environment variable
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'snipurl-admin-2024'
+// Admin password from environment or fallback
+const getAdminPassword = () => process.env.ADMIN_PASSWORD || 'snipurl-admin-2024'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { password } = body
 
-  if (password !== ADMIN_PASSWORD) {
+  if (password !== getAdminPassword()) {
     throw createError({
       statusCode: 401,
       message: 'Invalid password'
     })
   }
 
-  return { success: true }
+  // Return a simple token (timestamp-based, valid for session)
+  const token = Buffer.from(`${Date.now()}:${password}`).toString('base64')
+  
+  return { success: true, token }
 })

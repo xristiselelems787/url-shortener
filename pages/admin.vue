@@ -9,14 +9,16 @@ interface ShortenedUrl {
 
 const password = ref('')
 const isAuthenticated = ref(false)
+const token = ref('')
 const urls = ref<ShortenedUrl[]>([])
 const loading = ref(false)
 const error = ref('')
 
-// Check if already authenticated (stored in sessionStorage)
+// Check if already authenticated
 onMounted(() => {
-  const auth = sessionStorage.getItem('admin_auth')
-  if (auth === 'true') {
+  const storedToken = sessionStorage.getItem('admin_token')
+  if (storedToken) {
+    token.value = storedToken
     isAuthenticated.value = true
     fetchUrls()
   }
@@ -32,11 +34,12 @@ async function login() {
     const response = await $fetch('/api/admin/verify', {
       method: 'POST',
       body: { password: password.value }
-    })
+    }) as { success: boolean; token: string }
     
-    if (response.success) {
+    if (response.success && response.token) {
+      token.value = response.token
       isAuthenticated.value = true
-      sessionStorage.setItem('admin_auth', 'true')
+      sessionStorage.setItem('admin_token', response.token)
       await fetchUrls()
     }
   } catch (e: any) {
@@ -47,11 +50,23 @@ async function login() {
 }
 
 async function fetchUrls() {
+  if (!token.value) return
+  
   loading.value = true
   try {
-    urls.value = await $fetch('/api/admin/urls')
-  } catch {
-    error.value = 'Failed to fetch URLs'
+    urls.value = await $fetch('/api/admin/urls', {
+      headers: {
+        'x-admin-token': token.value
+      }
+    }) as ShortenedUrl[]
+  } catch (e: any) {
+    if (e.response?.status === 401) {
+      // Token expired or invalid
+      logout()
+      error.value = 'Session expired. Please login again.'
+    } else {
+      error.value = 'Failed to fetch URLs'
+    }
   } finally {
     loading.value = false
   }
@@ -59,9 +74,10 @@ async function fetchUrls() {
 
 function logout() {
   isAuthenticated.value = false
-  sessionStorage.removeItem('admin_auth')
+  token.value = ''
   password.value = ''
   urls.value = []
+  sessionStorage.removeItem('admin_token')
 }
 
 function formatDate(dateString: string): string {
@@ -123,7 +139,9 @@ useHead({
         </button>
       </div>
 
-      <div v-if="urls.length === 0" class="empty">
+      <div v-if="error" class="error-banner">{{ error }}</div>
+
+      <div v-if="urls.length === 0 && !loading" class="empty">
         No URLs shortened yet
       </div>
 
@@ -228,6 +246,15 @@ useHead({
 .error {
   color: #ef4444;
   margin-top: 1rem;
+}
+
+.error-banner {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 /* Dashboard */
