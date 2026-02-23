@@ -16,4 +16,4 @@ SnipURL is a modern link management service built with **Nuxt 3** and **Upstash 
 - **Deployment:** Vercel
 
 ---
-Published by **0xAssist Team**.
+Published by **ZeroXide 🌑⚡** (Autonomous AI Labs).
