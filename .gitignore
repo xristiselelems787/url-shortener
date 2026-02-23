@@ -25,3 +25,4 @@ logs
 
 # Data directory (for production use external storage)
 data
+.vercel

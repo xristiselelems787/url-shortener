@@ -1,3 +1,5 @@
+import { getUrl, setUrl } from '../utils/storage'
+
 interface UrlData {
   code: string
   originalUrl: string
@@ -16,7 +18,12 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const urlData = await storage.getItem<UrlData>(`urls:${code}`)
+  // Ignore API routes and static files
+  if (code.startsWith('_') || code.startsWith('api') || code.includes('.')) {
+    return
+  }
+
+  const urlData = await getUrl(code) as UrlData | null
 
   if (!urlData) {
     throw createError({
@@ -27,7 +34,7 @@ export default defineEventHandler(async (event) => {
 
   // Increment click counter
   urlData.clicks++
-  await storage.setItem(`urls:${code}`, urlData)
+  await setUrl(code, urlData)
 
   // Redirect to original URL
   return sendRedirect(event, urlData.originalUrl, 301)

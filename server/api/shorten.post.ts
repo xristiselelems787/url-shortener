@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid'
+import { getUrl, setUrl } from '../utils/storage'
 
 interface UrlData {
   code: string
@@ -43,7 +44,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Check if alias already exists
-    const existing = await storage.getItem<UrlData>(`urls:${code}`)
+    const existing = await getUrl(code)
     if (existing) {
       throw createError({
         statusCode: 409,
@@ -52,16 +53,16 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Check if random code collision (very unlikely but handle it)
+  // Check if random code collision
   if (!alias) {
     let attempts = 0
-    let existing = await storage.getItem<UrlData>(`urls:${code}`)
+    let existing = await getUrl(code)
+    let finalCode = code
+    
     while (existing && attempts < 5) {
-      const newCode = nanoid(6)
-      existing = await storage.getItem<UrlData>(`urls:${newCode}`)
-      if (!existing) {
-        break
-      }
+      finalCode = nanoid(6)
+      existing = await getUrl(finalCode)
+      if (!existing) break
       attempts++
     }
   }
@@ -75,7 +76,7 @@ export default defineEventHandler(async (event) => {
     clicks: 0
   }
 
-  await storage.setItem(`urls:${code}`, urlData)
+  await setUrl(code, urlData)
 
   // Get the host from headers
   const host = getRequestHeader(event, 'host') || 'localhost:3000'
