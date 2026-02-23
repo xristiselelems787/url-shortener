@@ -11,15 +11,19 @@ interface UrlData {
 export default defineEventHandler(async (event) => {
   const code = getRouterParam(event, 'code')
 
-  if (!code) {
-    throw createError({
-      statusCode: 400,
-      message: 'Code is required'
-    })
+  // Skip if no code or if it's a reserved path
+  if (!code || code.startsWith('_') || code === 'api') {
+    return
   }
 
-  // Ignore API routes and static files
-  if (code.startsWith('_') || code.startsWith('api') || code.includes('.')) {
+  // Skip static files (contain dots)
+  if (code.includes('.')) {
+    return
+  }
+
+  // Skip common paths that shouldn't be treated as short codes
+  const reservedPaths = ['favicon', 'robots', 'sitemap', '_nuxt', '__nuxt']
+  if (reservedPaths.some(p => code.startsWith(p))) {
     return
   }
 
