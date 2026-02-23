@@ -1,20 +1,10 @@
 <script setup lang="ts">
-interface ShortenedUrl {
-  code: string
-  originalUrl: string
-  alias?: string
-  createdAt: string
-  clicks: number
-}
-
 const url = ref('')
 const alias = ref('')
 const loading = ref(false)
 const result = ref<{ shortUrl: string; code: string } | null>(null)
 const error = ref('')
-const recentUrls = ref<ShortenedUrl[]>([])
 const copied = ref(false)
-const showHistory = ref(true)
 
 async function shortenUrl() {
   if (!url.value) return
@@ -35,20 +25,10 @@ async function shortenUrl() {
     result.value = response as { shortUrl: string; code: string }
     url.value = ''
     alias.value = ''
-    
-    await fetchRecentUrls()
   } catch (e: any) {
     error.value = e.data?.message || 'Failed to shorten URL'
   } finally {
     loading.value = false
-  }
-}
-
-async function fetchRecentUrls() {
-  try {
-    recentUrls.value = await $fetch('/api/urls')
-  } catch {
-    // Ignore errors
   }
 }
 
@@ -58,7 +38,6 @@ async function copyToClipboard(text: string) {
     copied.value = true
     setTimeout(() => { copied.value = false }, 2000)
   } catch {
-    // Fallback for older browsers
     const textarea = document.createElement('textarea')
     textarea.value = text
     document.body.appendChild(textarea)
@@ -70,37 +49,10 @@ async function copyToClipboard(text: string) {
   }
 }
 
-function truncateUrl(url: string, maxLength: number = 50): string {
-  if (url.length <= maxLength) return url
-  return url.substring(0, maxLength) + '...'
-}
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-function getDomain(url: string): string {
-  try {
-    return new URL(url).hostname
-  } catch {
-    return url
-  }
-}
-
-onMounted(() => {
-  fetchRecentUrls()
-})
-
 useHead({
   title: 'SnipURL - Modern URL Shortener',
   meta: [
-    { name: 'description', content: 'Fast, modern URL shortener with custom aliases and analytics' }
+    { name: 'description', content: 'Fast, modern URL shortener with custom aliases' }
   ]
 })
 </script>
@@ -189,54 +141,6 @@ useHead({
                 {{ copied ? '✓ Copied!' : '📋 Copy' }}
               </button>
             </div>
-          </div>
-        </Transition>
-
-        <!-- History Toggle -->
-        <button 
-          v-if="recentUrls.length > 0"
-          @click="showHistory = !showHistory" 
-          class="history-toggle"
-        >
-          <span>Recent Links</span>
-          <span class="chevron" :class="{ 'rotated': showHistory }">▼</span>
-        </button>
-
-        <!-- History Section -->
-        <Transition name="slide-down">
-          <div v-if="showHistory && recentUrls.length > 0" class="history-section">
-            <TransitionGroup name="list" tag="div" class="url-list">
-              <div 
-                v-for="item in recentUrls" 
-                :key="item.code" 
-                class="url-card"
-              >
-                <div class="url-card-main">
-                  <div class="short-url">
-                    <span class="domain">snip.io/</span>
-                    <span class="code">{{ item.alias || item.code }}</span>
-                    <span v-if="item.alias" class="badge">alias</span>
-                  </div>
-                  <div class="meta">
-                    <span class="clicks">
-                      <span class="clicks-icon">👁️</span>
-                      {{ item.clicks }} clicks
-                    </span>
-                    <span class="date">{{ formatDate(item.createdAt) }}</span>
-                  </div>
-                </div>
-                <div class="original-url">
-                  <span class="domain-badge">{{ getDomain(item.originalUrl) }}</span>
-                  <span class="url-text">{{ truncateUrl(item.originalUrl, 40) }}</span>
-                </div>
-                <button 
-                  @click="copyToClipboard(`https://${result?.shortUrl.split('//')[1]?.split('/')[0] || 'snip.io'}/${item.code}`)"
-                  class="mini-copy-btn"
-                >
-                  📋
-                </button>
-              </div>
-            </TransitionGroup>
           </div>
         </Transition>
       </main>
@@ -561,7 +465,6 @@ body {
   border: 1px solid rgba(16, 185, 129, 0.3);
   border-radius: 1rem;
   padding: 1.5rem;
-  margin-bottom: 1.5rem;
 }
 
 .result-header {
@@ -621,146 +524,6 @@ body {
   color: white;
 }
 
-/* History Toggle */
-.history-toggle {
-  width: 100%;
-  padding: 1rem;
-  background: transparent;
-  border: none;
-  color: var(--text);
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 0.5rem;
-}
-
-.chevron {
-  transition: transform 0.3s;
-  font-size: 0.75rem;
-}
-
-.chevron.rotated {
-  transform: rotate(180deg);
-}
-
-/* History Section */
-.history-section {
-  margin-top: 1rem;
-}
-
-.url-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.url-card {
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1rem 1.25rem;
-  position: relative;
-  transition: all 0.2s;
-}
-
-.url-card:hover {
-  border-color: var(--primary);
-}
-
-.url-card-main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-  gap: 1rem;
-}
-
-.short-url {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 1rem;
-}
-
-.short-url .domain {
-  color: var(--text-muted);
-}
-
-.short-url .code {
-  font-weight: 600;
-  color: var(--primary-light);
-}
-
-.badge {
-  background: var(--primary);
-  color: white;
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-left: 0.5rem;
-}
-
-.meta {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-.clicks {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.clicks-icon {
-  font-size: 0.9rem;
-}
-
-.original-url {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.domain-badge {
-  background: rgba(139, 92, 246, 0.2);
-  color: var(--primary-light);
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.7rem;
-  font-weight: 500;
-}
-
-.url-text {
-  color: var(--text-muted);
-}
-
-.mini-copy-btn {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  padding: 0.5rem;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  opacity: 0.5;
-  transition: opacity 0.2s;
-  font-size: 0.9rem;
-}
-
-.url-card:hover .mini-copy-btn {
-  opacity: 1;
-}
-
 /* Footer */
 .footer {
   text-align: center;
@@ -802,28 +565,6 @@ body {
   transform: translateY(10px);
 }
 
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.3s ease;
-}
-
-.slide-down-enter-from,
-.slide-down-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-.list-enter-active,
-.list-leave-active {
-  transition: all 0.3s ease;
-}
-
-.list-enter-from,
-.list-leave-to {
-  opacity: 0;
-  transform: translateX(-30px);
-}
-
 /* Responsive */
 @media (max-width: 640px) {
   .container {
@@ -849,17 +590,6 @@ body {
 
   .shorten-btn {
     width: 100%;
-  }
-
-  .url-card-main {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .meta {
-    width: 100%;
-    justify-content: flex-start;
   }
 }
 </style>
