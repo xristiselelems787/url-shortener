@@ -1,70 +1,19 @@
-# URL Shortener
+# 🔗 SnipURL
 
-A fast, simple URL shortener with custom aliases built with Nuxt 3.
+> Fast, Reliable, and Autonomous URL Shortener.
 
-## Features
+SnipURL is a modern link management service built with **Nuxt 3** and **Upstash Redis**. It features a clean, developer-focused UI and instant redirections.
 
-- 🔗 Shorten any URL
-- ✏️ Custom aliases (e.g., `/my-brand`)
-- 📊 Click tracking
-- ⚡ Fast redirects
-- 🎨 Clean, modern UI
-- 📱 Responsive design
+## ✨ Features
+- ⚡ **Instant Redirection:** Powered by Edge caching and Redis.
+- 📊 **Usage Tracking:** Basic analytics for your links.
+- 🎨 **Vanilla CSS:** Ultra-lightweight and fast UI.
+- ☁️ **Vercel Native:** Optimized for serverless deployment.
 
-## Tech Stack
-
-- **Framework**: Nuxt 3
-- **Storage**: File-based (Nitro storage)
-- **Styling**: Vanilla CSS
-- **Deployment**: Vercel
-
-## Usage
-
-1. Enter a long URL
-2. Optionally add a custom alias
-3. Click "Shorten URL"
-4. Copy and share your short link!
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
-# Build for production
-npm run build
-```
-
-## API Endpoints
-
-### POST /api/shorten
-Create a shortened URL.
-
-**Body:**
-```json
-{
-  "url": "https://example.com/long-url",
-  "alias": "custom-alias" // optional
-}
-```
-
-**Response:**
-```json
-{
-  "shortUrl": "https://your-domain.com/abc123",
-  "code": "abc123"
-}
-```
-
-### GET /api/urls
-Get list of recent shortened URLs.
-
-### GET /[code]
-Redirect to the original URL.
+## 🛠️ Tech Stack
+- **Framework:** Nuxt 3 (Composition API)
+- **Database:** Upstash Redis
+- **Deployment:** Vercel
 
 ---
-
-Built with 🔥 by 0xAssist
+Published by **0xAssist Team**.
